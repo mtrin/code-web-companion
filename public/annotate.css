@@ -1,0 +1,406 @@
+.annotator {
+  --an-bg: #1b1b1b;
+  --an-border: #2c2c2c;
+  --an-text: #d4d4d4;
+  --an-muted: #8a8a8a;
+  --an-mono: "Cascadia Code", "Cascadia Mono", Consolas, "DejaVu Sans Mono", monospace;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: 10px 0;
+  color: var(--an-text);
+  font: 14px/1.5 "Segoe UI", system-ui, sans-serif;
+}
+
+.annotator::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -14px;
+  width: 2px;
+  background: #3b74ad;
+  border-radius: 2px;
+  opacity: 0.7;
+}
+
+.annotator.empty .an-editor {
+  display: none;
+}
+
+.c0 {
+  --note: #f28bb0;
+}
+
+.c1 {
+  --note: #f0a46c;
+}
+
+.c2 {
+  --note: #e5c07b;
+}
+
+.c3 {
+  --note: #b79cf2;
+}
+
+.c4 {
+  --note: #7cc7c0;
+}
+
+.an-bar {
+  position: sticky;
+  top: var(--sticky-top, 46px);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--an-border);
+}
+
+.an-title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.annotator button {
+  padding: 4px 14px;
+  background: #1f1f1f;
+  color: var(--an-text);
+  border: 1px solid #3a3a3a;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.annotator button:hover:not(:disabled) {
+  border-color: #6a6a6a;
+}
+
+.annotator button.primary {
+  background: #2c5d8f;
+  border-color: #3b74ad;
+  color: #fff;
+}
+
+.annotator button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.annotator button[hidden] {
+  display: none;
+}
+
+.annotator button.an-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: #c8c8c8;
+}
+
+.annotator button.an-newer {
+  padding: 2px 10px;
+  color: #e5c07b;
+  background: #2a2618;
+  border-color: #8a7330;
+  font-size: 12px;
+}
+
+.annotator button.an-newer.armed {
+  color: #ffb3b3;
+  background: #4a1d1d;
+  border-color: #c14a4a;
+}
+
+.an-look {
+  display: inline-flex;
+}
+
+.annotator .an-look button {
+  padding: 4px 10px;
+  color: var(--an-muted);
+  border-radius: 0;
+}
+
+.annotator .an-look button:first-child {
+  border-radius: 5px 0 0 5px;
+}
+
+.annotator .an-look button:last-child {
+  margin-left: -1px;
+  border-radius: 0 5px 5px 0;
+}
+
+.annotator .an-look button[aria-pressed="true"] {
+  position: relative;
+  background: #26303c;
+  color: #e8e8e8;
+  border-color: #3b74ad;
+}
+
+.an-editor {
+  position: relative;
+}
+
+.annotator .an-editor .cm-rendered {
+  color: var(--an-text);
+  font-size: 15px;
+}
+
+.annotator .an-editor .cm-rendered > .cm-scroller {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  line-height: 1.65;
+}
+
+.annotator .an-editor .cm-rendered .cm-line.cm-md-blank {
+  line-height: 1;
+}
+
+.annotator .an-editor .cm-rendered .cm-line.cm-md-h1,
+.annotator .an-editor .cm-rendered .cm-line.cm-md-h2,
+.annotator .an-editor .cm-rendered .cm-line.cm-md-h3 {
+  padding-top: 0.35em;
+  line-height: 1.35;
+}
+
+.annotator .an-editor .cm-rendered .cm-line.cm-md-h1 {
+  font-size: 1.5em;
+}
+
+.annotator .an-editor .cm-rendered .cm-line.cm-md-h2 {
+  font-size: 1.3em;
+}
+
+.annotator .an-editor .cm-rendered .cm-line.cm-md-h3 {
+  font-size: 1.12em;
+}
+
+.annotator .an-editor .cm-rendered .cm-line.cm-md-quote {
+  color: #b0b0b0;
+}
+
+.annotator .an-editor .cm-rendered .cm-line.cm-md-hr {
+  background: linear-gradient(#3a3a3a, #3a3a3a) 0 50% / 100% 1px no-repeat;
+}
+
+.annotator .an-editor .cm-rendered .cm-line.cm-md-pre {
+  padding: 0 16px;
+  background: rgb(0 0 0 / 32%);
+  color: #d4d4d4;
+  font: 13.5px/1.55 var(--an-mono);
+}
+
+.annotator .an-editor .cm-rendered .cm-line.cm-md-pre-top {
+  padding-top: 4px;
+  border-radius: 6px 6px 0 0;
+  line-height: 1.4;
+}
+
+.annotator .an-editor .cm-rendered .cm-line.cm-md-pre-bottom {
+  border-radius: 0 0 6px 6px;
+  font-size: 9px;
+}
+
+.annotator .an-editor .cm-rendered .cm-md-lang {
+  color: var(--an-muted);
+  font-size: 11.5px;
+}
+
+.annotator .an-editor .cm-rendered .cm-md-code {
+  padding: 1px 5px;
+  background: #2b2b2b;
+  color: #e5c07b;
+  border-radius: 4px;
+  font-family: var(--an-mono);
+  font-size: 0.9em;
+}
+
+.annotator .an-editor .cm-rendered .cm-md-link {
+  color: #6ab0f3;
+}
+
+.annotator .an-editor .cm-rendered .cm-md-bullet {
+  display: inline-block;
+  width: 1.7em;
+  color: var(--an-muted);
+  text-indent: 0;
+}
+
+.annotator .an-editor .cm-rendered .cm-md-task {
+  margin-right: 0.35em;
+  color: var(--an-muted);
+}
+
+.annotator .an-editor .cm-rendered .cm-badge {
+  text-indent: 0;
+}
+
+.annotator .an-editor .cm-rendered .cm-line.cm-md-th,
+.annotator .an-editor .cm-rendered .cm-line.cm-md-tr {
+  display: grid;
+  border-left: 1px solid #3a3a3a;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.annotator .an-editor .cm-rendered .cm-line.cm-md-th > :not(.cm-md-cell, .cm-md-cells),
+.annotator .an-editor .cm-rendered .cm-line.cm-md-tr > :not(.cm-md-cell, .cm-md-cells) {
+  display: none;
+}
+
+.annotator .an-editor .cm-rendered .cm-md-cells {
+  display: contents;
+}
+
+.annotator .an-editor .cm-rendered .cm-md-cell {
+  min-width: 0;
+  padding: 6px 12px;
+  border-right: 1px solid #3a3a3a;
+  border-bottom: 1px solid #3a3a3a;
+  overflow-wrap: anywhere;
+}
+
+.annotator .an-editor .cm-rendered .cm-md-th .cm-md-cell {
+  background: rgb(255 255 255 / 4%);
+  border-top: 1px solid #3a3a3a;
+  font-weight: 600;
+}
+
+.annotator .cm-content .cm-note,
+.annotator .cm-content .cm-note * {
+  color: var(--note);
+}
+
+.annotator .cm-note {
+  background: color-mix(in srgb, var(--note) 13%, transparent);
+  border-radius: 2px;
+}
+
+.annotator .cm-target {
+  background: rgb(79 140 201 / 24%);
+  border-bottom: 1px solid #4f8cc9;
+}
+
+.annotator .cm-badge {
+  display: inline-block;
+  margin: 0 2px 0 3px;
+  padding: 0 5px;
+  background: var(--note);
+  color: #1b1b1b;
+  border-radius: 7px;
+  font: 700 10px/15px "Segoe UI", system-ui, sans-serif;
+  vertical-align: 3px;
+  cursor: pointer;
+}
+
+.note-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font: 13.5px/1.5 "Segoe UI", system-ui, sans-serif;
+}
+
+.note-editor {
+  padding: 6px;
+  background: var(--an-bg);
+  border: 1px solid #3a3a3a;
+  border-radius: 5px;
+  font: 13px/1.5 var(--an-mono);
+  cursor: text;
+}
+
+.note-editor:focus-within {
+  border-color: #3b74ad;
+}
+
+.note-editor .cm-editor {
+  max-height: 40vh;
+}
+
+.note-editor .cm-content {
+  min-height: 52px;
+}
+
+.pop-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pop-hint {
+  margin-right: auto;
+  font-size: 11.5px;
+  color: var(--an-muted);
+}
+
+.an-notes {
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+  border-top: 1px solid var(--an-border);
+}
+
+.an-notes[hidden] {
+  display: none;
+}
+
+.an-notes li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1px 8px;
+  padding: 5px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.an-notes li:hover {
+  background: #242424;
+}
+
+.an-notes .n {
+  align-self: start;
+  margin-top: 2px;
+  padding: 0 6px;
+  background: var(--note);
+  color: #1b1b1b;
+  border-radius: 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 16px;
+}
+
+.an-notes .q {
+  overflow: hidden;
+  color: var(--note);
+  font: 12.5px/1.6 var(--an-mono);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.an-notes .t {
+  grid-column: 2;
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.an-status {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--an-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.an-status.error {
+  color: #f0b4b4;
+}

@@ -1,0 +1,49 @@
+{
+  "name": "code-web-companion",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A local web companion for Claude Code in tmux: rendered replies, notes on any sentence, messages sent to your terminal.",
+  "keywords": [
+    "claude-code",
+    "tmux",
+    "markdown",
+    "developer-tools",
+    "terminal"
+  ],
+  "license": "MIT",
+  "author": "Mauricio Trindade",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mtrin/code-web-companion.git"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "start": "node src/server.ts",
+    "dev": "node --watch src/server.ts",
+    "check": "tsc",
+    "build": "esbuild web/codemirror.js --bundle --splitting --format=esm --minify --legal-comments=none --chunk-names=chunks/[name]-[hash] --outdir=public/vendor",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.322",
+    "@hono/node-server": "^2.1.8",
+    "highlight.js": "^11.12.0",
+    "hono": "^4.13.18",
+    "markdown-it": "^15.0.3"
+  },
+  "devDependencies": {
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-markdown": "^6.5.2",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/language-data": "^6.5.2",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
+    "@lezer/highlight": "^1.2.5",
+    "@types/node": "^26.6.6",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  }
+}

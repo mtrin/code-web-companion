@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Claude sessions</title>
+    <link rel="stylesheet" href="/vendor/hljs.css" />
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/annotate.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <aside id="sidebar">
+      <header>
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab active" data-view="live" role="tab">Sessions</button>
+          <button type="button" class="tab" data-view="archived" role="tab">Archived</button>
+        </div>
+        <input id="filter" type="search" placeholder="Filter by title or folder" autocomplete="off" />
+      </header>
+      <nav id="sessions"></nav>
+    </aside>
+    <main id="main">
+      <header id="session-header">
+        <h1 id="title">Loading</h1>
+        <span id="cwd"></span>
+        <span id="open-badge" hidden></span>
+        <span id="context" hidden><span class="meter"><span class="fill"></span></span><span class="label"></span></span>
+        <span id="status"></span>
+      </header>
+      <section id="entries"></section>
+      <div id="draft" hidden></div>
+      <section id="dock" hidden>
+        <div id="asks"></div>
+        <div id="chat-notice" hidden></div>
+        <div id="chat-error" hidden></div>
+        <form id="compose" class="off">
+          <div id="message"></div>
+          <div class="compose-bar">
+            <span id="chat-state"></span>
+            <button id="notes-chip" type="button" hidden></button>
+            <button id="stop" type="button" hidden>Stop</button>
+            <button id="expand" type="button" class="icon"></button>
+            <button id="send" type="submit" class="primary" hidden>Send</button>
+          </div>
+        </form>
+      </section>
+    </main>
+    <div id="toast" hidden><span id="toast-text"></span><button id="toast-action" type="button" hidden></button></div>
+  </body>
+</html>

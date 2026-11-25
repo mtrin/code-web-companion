@@ -1,0 +1,13 @@
+[Unit]
+Description=code-web-companion, a local web companion for Claude Code
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/code-web-companion
+ExecStart=/usr/bin/node src/server.ts
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target
