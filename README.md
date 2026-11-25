@@ -4,7 +4,7 @@ A local web companion for Claude Code in tmux. It shows every Claude Code sessio
 
 Everything stays on your machine. The server reads the transcripts Claude Code already writes under `~/.claude/projects`, listens on `localhost` only, and never talks to any outside service.
 
-This is an early personal project. It runs on Linux and on Windows through WSL, and macOS support is planned. It reads Claude Code's own files, which are not a public interface, so a Claude Code update can change what it sees. It was last tested with Claude Code 2.1.331.
+This is an early personal project. It runs on Linux and on Windows through WSL, and macOS support is new, as described under Install. It reads Claude Code's own files, which are not a public interface, so a Claude Code update can change what it sees. It was last tested with Claude Code 2.1.331.
 
 ## What it does
 
@@ -79,7 +79,7 @@ Claude Code itself deletes transcripts that have been inactive for longer than `
 
 You need:
 
-- Linux, or Windows with WSL
+- Linux, Windows with WSL, or macOS
 - Node.js 26 or newer
 - Claude Code
 - tmux, to send messages into terminal sessions
@@ -93,6 +93,16 @@ npm start
 ```
 
 Then open <http://localhost:7878>. Under WSL, the Windows browser reaches it at the same address.
+
+### macOS
+
+Install Node.js and tmux with Homebrew, then follow the same steps:
+
+```sh
+brew install node tmux
+```
+
+On Linux the server finds running Claude Code processes through `/proc`; macOS has no `/proc`, so there it reads the same facts from `ps`. That path is new and has only been tested on Linux so far. Until it is confirmed on a Mac, check that a session open in a terminal shows as open in the sidebar before you join, archive or delete it. If it shows as closed, joining would start a second Claude process on it and fork its transcript.
 
 ### Run it as a service
 
@@ -152,6 +162,7 @@ The server is Node running TypeScript directly through type stripping, so the co
 | `src/chat/host.ts` | Headless chat: messages, streamed draft, permission requests, leave |
 | `src/chat/terminal.ts` | Terminal chat: pastes messages into the session's tmux pane and mirrors its state |
 | `src/chat/registry.ts` | Picks the route on join, page subscribers and the idle sweep |
+| `src/processes.ts` | Process names and parents, from `/proc` on Linux and `ps` elsewhere |
 | `src/archive.ts` | Archive and unarchive |
 | `src/delete.ts` | Permanent delete with the citation and location checks |
 | `src/security.ts` | Host, origin and token checks |
@@ -185,7 +196,7 @@ A test with a throwaway session in a detached tmux session checked the paste rou
 14. **Refine the context bar colour.** The bar uses a light blue, `--context` in `public/style.css`, so it stands apart from the darker blue border of the selected row. The exact shade is not settled.
 15. **Never lose a chat to Claude Code's cleanup.** By default the server archives a session one day before Claude Code's `cleanupPeriodDays` limit would delete it, skipping open sessions. It checks when the service starts and then every hour, so a computer that was off for a while is covered before the first new session runs the cleanup. A full backup that copies each transcript as it grows is an optional extra.
 16. **Compress archived chats, and show them as usual.** Archived transcripts never change, so archiving can compress them with zstd and unarchiving puts back the plain file that `claude --resume` needs. Node's built-in `zlib` reads it, so the page opens a compressed chat like any other.
-17. **macOS.** Process checks read `/proc`, which macOS lacks, so they need `ps` there; the service needs a launchd agent instead of a systemd unit.
+17. **A macOS service.** Running in the background on macOS needs a launchd agent instead of a systemd unit.
 18. **An install command.** One command that writes the systemd or launchd service with the right paths filled in.
 
 ## License

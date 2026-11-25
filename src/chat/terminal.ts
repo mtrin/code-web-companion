@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
-import { readFile } from 'node:fs/promises'
 import type { Config } from '../config.ts'
+import { processLookup } from '../processes.ts'
 import { openEntry } from '../transcript/open.ts'
 import type { ChatLink, ChatState, ChatStatus, Decision, LinkOptions } from './types.ts'
 
@@ -132,11 +132,11 @@ export class TerminalLink implements ChatLink {
 }
 
 async function ancestors(pid: number): Promise<number[]> {
+  const lookup = await processLookup()
   const chain: number[] = []
   let current = pid
   while (current > 1 && chain.length < 32) {
-    const stat = await readFile(`/proc/${current}/stat`, 'utf8').catch(() => '')
-    const parent = Number(stat.slice(stat.lastIndexOf(') ') + 2).split(' ')[1])
+    const parent = (await lookup(current))?.parent
     if (!parent) break
     chain.push(parent)
     current = parent
