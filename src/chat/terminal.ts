@@ -1,6 +1,6 @@
-import { execFile } from 'node:child_process'
 import type { Config } from '../config.ts'
 import { processLookup } from '../processes.ts'
+import { tmuxRunner, type TmuxRun } from '../tmux-web/run.ts'
 import { openEntry } from '../transcript/open.ts'
 import type { ChatLink, ChatState, ChatStatus, Decision, LinkOptions } from './types.ts'
 
@@ -8,11 +8,15 @@ interface TerminalOptions extends LinkOptions {
   config: Config
   pid: number
   pane: string
+  // Runs tmux against the server that holds the pane: tmux-web's, or by default your own tmux server.
+  run?: TmuxRun
+  // Set when the pane belongs to tmux-web: its session name and the command that attaches a terminal to it.
+  terminal?: string
+  attach?: string
 }
 
 const POLL_MS = 1500
 const ENTER_DELAY_MS = 200
-const TMUX_TIMEOUT_MS = 5000
 const BUFFER = 'code-web-companion'
 const PANE_FORMAT = '#{pane_pid} #{window_panes} #{pane_index} window #{session_name}:#{window_index} "#{window_name}"'
 const PANE_INFO = /^(\d+) (\d+) (\d+) (.*)$/
@@ -28,6 +32,7 @@ export class TerminalLink implements ChatLink {
   lastActivity = Date.now()
   readonly busy = false
   private readonly options: TerminalOptions
+  private readonly run: TmuxRun
   private state: ChatState = 'idle'
   private closed = false
   private error = ''
@@ -36,9 +41,14 @@ export class TerminalLink implements ChatLink {
 
   constructor(options: TerminalOptions) {
     this.options = options
+    this.run = options.run ?? tmuxRunner(options.config.tmuxBin)
   }
 
   status(): ChatStatus {
+    const { terminal, attach } = this.options
+    const where = terminal
+      ? 'Claude runs in tmux-web. Answer approvals and questions in the terminal panel, or attach from a terminal.'
+      : `Messages go to your terminal in tmux ${this.place || 'pane'}. Approvals and questions are answered there.`
     return {
       joined: !this.closed,
       mode: 'terminal',
@@ -48,7 +58,8 @@ export class TerminalLink implements ChatLink {
       asks: [],
       error: this.error,
       notice: '',
-      where: this.closed ? '' : `Messages go to your terminal in tmux ${this.place || 'pane'}. Approvals and questions are answered there.`,
+      where: this.closed ? '' : where,
+      ...(terminal && !this.closed ? { terminal, attach } : {}),
     }
   }
 
@@ -107,7 +118,8 @@ export class TerminalLink implements ChatLink {
     const info = PANE_INFO.exec((await this.tmux(['display-message', '-p', '-t', pane, PANE_FORMAT])).trim())
     const [, panePid = '', panes = '', paneIndex = '', window = `pane ${pane}`] = info ?? []
     const place = Number(panes) > 1 ? `${window}, pane ${paneIndex}` : window
-    if (!Number(panePid) || !(await ancestors(pid)).includes(Number(panePid))) throw new Error(`tmux ${place} no longer holds this session.`)
+    // A tmux-web pane runs Claude itself, so the pane's process can be Claude rather than one of its parents.
+    if (!Number(panePid) || ![pid, ...(await ancestors(pid))].includes(Number(panePid))) throw new Error(`tmux ${place} no longer holds this session.`)
     if (place === this.place) return
     this.place = place
     this.publish()
@@ -127,11 +139,11 @@ export class TerminalLink implements ChatLink {
   }
 
   private tmux(args: string[], input?: string): Promise<string> {
-    return runTmux(this.options.config.tmuxBin, args, input)
+    return this.run(args, input)
   }
 }
 
-async function ancestors(pid: number): Promise<number[]> {
+export async function ancestors(pid: number): Promise<number[]> {
   const lookup = await processLookup()
   const chain: number[] = []
   let current = pid
@@ -142,16 +154,4 @@ async function ancestors(pid: number): Promise<number[]> {
     current = parent
   }
   return chain
-}
-
-function runTmux(bin: string, args: string[], input?: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const child = execFile(bin, ['-u', ...args], { encoding: 'utf8', timeout: TMUX_TIMEOUT_MS }, (error, stdout, stderr) => {
-      if (error) reject(new Error(stderr.trim() || error.message))
-      else resolve(stdout)
-    })
-    child.stdin?.on('error', () => undefined)
-    if (input === undefined) child.stdin?.end()
-    else child.stdin?.end(input)
-  })
 }

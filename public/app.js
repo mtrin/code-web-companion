@@ -1,5 +1,6 @@
 import { COLLAPSE_ICON, createAnnotator } from './annotate.js'
 import { createPrompt } from './prompt.js'
+import { createTerminal } from './terminal.js'
 
 const OLD_PREFIX = 'code-md-viewer:'
 for (const key of Object.keys(localStorage).filter((name) => name.startsWith(OLD_PREFIX))) {
@@ -27,6 +28,7 @@ const els = {
   asks: $('asks'),
   chatError: $('chat-error'),
   chatNotice: $('chat-notice'),
+  chatAttach: $('chat-attach'),
   compose: $('compose'),
   message: $('message'),
   chatState: $('chat-state'),
@@ -35,6 +37,8 @@ const els = {
   toast: $('toast'),
   toastText: $('toast-text'),
   toastAction: $('toast-action'),
+  terminal: $('terminal'),
+  terminalToggle: $('terminal-toggle'),
 }
 
 const REFRESH_MS = 10_000
@@ -74,6 +78,7 @@ const CHAT_STATES = {
   closed: 'Reading only',
 }
 const TERMINAL_STATES = {
+  starting: 'Starting Claude in tmux',
   idle: 'Ready, sending to your terminal',
   working: 'Claude is working in your terminal',
   waiting: 'Claude is waiting for an answer in your terminal',
@@ -105,6 +110,23 @@ const annotator = createAnnotator({
   scroller: () => els.main,
 })
 const prompt = createPrompt(els.message, { send: sendMessage, changed: saveDraft })
+const terminal = createTerminal(els.terminal, { post: api })
+let terminalOpen = false
+let lastChatState = ''
+
+// The message box takes focus back only when the terminal panel does not have it.
+function focusPrompt() {
+  if (!terminal.hasFocus()) prompt.focus()
+}
+
+function setTerminal(open) {
+  terminalOpen = open && Boolean(current?.chat?.terminal)
+  document.body.classList.toggle('with-terminal', terminalOpen)
+  els.terminal.hidden = !terminalOpen
+  els.terminalToggle.classList.toggle('active', terminalOpen)
+  if (terminalOpen) terminal.show(current.chat.terminal)
+  else terminal.hide()
+}
 
 async function api(path, body) {
   const response = await fetch(path, {
@@ -334,6 +356,8 @@ function open(id) {
   if (!id || current?.id === id) return
   current?.source.close()
   collapse()
+  setTerminal(false)
+  lastChatState = ''
   els.entries.replaceChildren()
   els.context.hidden = true
   els.title.textContent = 'Loading'
@@ -506,14 +530,28 @@ function showChat(status) {
   els.chatNotice.textContent = status.notice ?? ''
   els.chatError.hidden = !status.error
   els.chatError.textContent = status.error
+  els.chatAttach.hidden = !status.attach
+  els.chatAttach.textContent = status.attach ? `Open it in a terminal: ${status.attach}` : ''
   els.draft.hidden = !status.draft
   els.draft.textContent = status.draft
   renderAsks(status.asks)
+  paintTerminal(status)
   if (stick) els.main.scrollTop = els.main.scrollHeight
   if (chatting && current?.focusOnJoin) {
     current.focusOnJoin = false
-    prompt.focus()
+    focusPrompt()
   }
+}
+
+// The Terminal button shows for chats in tmux-web. The panel opens by itself when Claude starts waiting for an answer.
+function paintTerminal(status) {
+  els.terminalToggle.hidden = !status.terminal || status.state === 'starting'
+  if (terminalOpen && terminal.name !== status.terminal) setTerminal(Boolean(status.terminal))
+  if (status.terminal && status.state === 'waiting' && lastChatState !== 'waiting') {
+    setTerminal(true)
+    terminal.focus()
+  }
+  lastChatState = status.state
 }
 
 function renderAsks(asks) {
@@ -665,7 +703,7 @@ async function sendMessage() {
   annotator.clear()
   prompt.clear()
   collapse()
-  prompt.focus()
+  focusPrompt()
 }
 
 function saveDraft() {
@@ -737,7 +775,7 @@ function expand() {
   else if (anchor) els.main.scrollTop += annotator.panel.getBoundingClientRect().top - before
   paintExpand()
   paintChip()
-  if (isChatting(current.chat)) prompt.focus()
+  if (isChatting(current.chat)) focusPrompt()
   else joinCurrent()
 }
 
@@ -752,7 +790,7 @@ function collapse() {
   else if (first && anchor !== null) els.main.scrollTop += first.getBoundingClientRect().top - anchor
   paintExpand()
   paintChip()
-  prompt.focus()
+  focusPrompt()
 }
 
 async function rowAction(button) {
@@ -837,6 +875,15 @@ document.addEventListener('click', async (event) => {
 })
 
 els.stop.addEventListener('click', () => current && api(`/api/sessions/${current.id}/chat/interrupt`))
+els.terminalToggle.addEventListener('click', () => {
+  setTerminal(!terminalOpen)
+  if (terminalOpen) terminal.focus()
+})
+els.chatAttach.addEventListener('click', async () => {
+  if (!current?.chat?.attach) return
+  await copyText(current.chat.attach)
+  toast('Attach command copied')
+})
 els.compose.addEventListener('submit', (event) => {
   event.preventDefault()
   sendMessage()
