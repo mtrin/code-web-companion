@@ -29,14 +29,14 @@ export function createTerminal(container, { post }) {
   container.addEventListener('keydown', (event) => event.stopPropagation())
   term.onData((data) => send(encoder.encode(data)))
   term.onBinary((data) => send(Uint8Array.from(data, (char) => char.charCodeAt(0))))
-  new ResizeObserver(() => resize()).observe(container)
+  new ResizeObserver(() => requestSize()).observe(container)
 
   function show(next) {
     if (!opened) {
       term.open(container)
       opened = true
     }
-    if (next === name && source) return resize()
+    if (next === name && source) return requestSize()
     hide()
     name = next
     retries = 0
@@ -47,10 +47,16 @@ export function createTerminal(container, { post }) {
   function connect() {
     source = new EventSource(`/api/tmux/${encodeURIComponent(name)}/stream`)
     source.addEventListener('screen', (event) => {
+      const { data, cols, rows } = JSON.parse(event.data)
       retries = 0
       term.reset()
-      term.write(decode(JSON.parse(event.data).data))
-      resize()
+      follow(cols, rows)
+      term.write(decode(data))
+      requestSize()
+    })
+    source.addEventListener('size', (event) => {
+      const { cols, rows } = JSON.parse(event.data)
+      follow(cols, rows)
     })
     source.addEventListener('output', (event) => term.write(decode(JSON.parse(event.data).data)))
     source.addEventListener('exit', () => {
@@ -90,12 +96,18 @@ export function createTerminal(container, { post }) {
     void flush()
   }
 
-  function resize() {
+  // The output stream draws right only at the pane's own size, so the terminal always takes the size tmux reports.
+  function follow(cols, rows) {
+    if (cols > 0 && rows > 0 && (cols !== term.cols || rows !== term.rows)) term.resize(cols, rows)
+  }
+
+  // The panel only asks for the size that fits it; tmux decides, from every attached viewer, and reports back.
+  function requestSize() {
     clearTimeout(sizeTimer)
     sizeTimer = setTimeout(() => {
       if (!opened || !name || !container.offsetWidth) return
-      fit.fit()
-      void post(`/api/tmux/${encodeURIComponent(name)}/size`, { cols: term.cols, rows: term.rows })
+      const fits = fit.proposeDimensions()
+      if (fits) void post(`/api/tmux/${encodeURIComponent(name)}/size`, { cols: fits.cols, rows: fits.rows })
     }, SIZE_DEBOUNCE_MS)
   }
 

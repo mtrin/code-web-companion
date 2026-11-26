@@ -13,6 +13,7 @@ export class ControlClient {
   private readonly target: string
   private readonly pending: Waiter[] = []
   private readonly outputs = new Set<(bytes: Buffer) => void>()
+  private readonly sizes = new Set<(cols: number, rows: number) => void>()
   private readonly exits = new Set<() => void>()
   private block: string[] | undefined
   private rest = Buffer.alloc(0)
@@ -44,6 +45,12 @@ export class ControlClient {
     return () => this.outputs.delete(listener)
   }
 
+  // The pane's size whenever the window changes size. The output stream only draws right at this size.
+  onSize(listener: (cols: number, rows: number) => void): () => void {
+    this.sizes.add(listener)
+    return () => this.sizes.delete(listener)
+  }
+
   onExit(listener: () => void): () => void {
     if (this.ended) listener()
     else this.exits.add(listener)
@@ -73,14 +80,15 @@ export class ControlClient {
     await this.command(`refresh-client -C ${cols}x${rows}`)
   }
 
-  // The visible screen with its colours, then the cursor position, as bytes a terminal can draw from blank.
-  async screen(): Promise<Buffer> {
-    const [lines, [cursor = '0 0']] = await Promise.all([
+  // The visible screen with its colours, then the cursor position, as bytes a terminal of the pane's size can draw from blank.
+  async screen(): Promise<{ bytes: Buffer; cols: number; rows: number }> {
+    const [lines, [info = '0 0 0 0']] = await Promise.all([
       this.command(`capture-pane -p -e -t ${this.target}`),
-      this.command(`display-message -p -t ${this.target} '#{cursor_x} #{cursor_y}'`),
+      this.command(`display-message -p -t ${this.target} '#{cursor_x} #{cursor_y} #{pane_width} #{pane_height}'`),
     ])
-    const [x = 0, y = 0] = cursor.split(' ').map(Number)
-    return Buffer.from(`\x1b[0m\x1b[H\x1b[2J${lines.join('\x1b[0m\r\n')}\x1b[0m\x1b[${y + 1};${x + 1}H`, 'utf8')
+    const [x = 0, y = 0, cols = 0, rows = 0] = info.split(' ').map(Number)
+    const bytes = Buffer.from(`\x1b[0m\x1b[H\x1b[2J${lines.join('\x1b[0m\r\n')}\x1b[0m\x1b[${y + 1};${x + 1}H`, 'utf8')
+    return { bytes, cols, rows }
   }
 
   close(): void {
@@ -129,6 +137,12 @@ export class ControlClient {
       for (const listener of this.outputs) listener(bytes)
       return
     }
+    if (text.startsWith('%layout-change ')) {
+      // Control clients get the classic layout string, "checksum,WIDTHxHEIGHT,..."; sessions here have one pane.
+      const size = /^%layout-change @\d+ [0-9a-f]{4},(\d+)x(\d+),/.exec(text)
+      if (size) for (const listener of this.sizes) listener(Number(size[1]), Number(size[2]))
+      return
+    }
     if (text.startsWith('%exit')) this.end(new Error('The tmux session has ended.'))
   }
 
@@ -140,6 +154,7 @@ export class ControlClient {
     for (const listener of this.exits) listener()
     this.exits.clear()
     this.outputs.clear()
+    this.sizes.clear()
     if (this.child.exitCode === null) this.child.kill()
   }
 }

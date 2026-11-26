@@ -22,10 +22,12 @@ export function tmuxRoutes(tmuxWeb: TmuxWeb): Hono {
       const send = (event: string, data: unknown) => {
         chain = chain.then(() => stream.writeSSE({ event, data: JSON.stringify(data) })).catch(() => undefined)
       }
-      // Output that arrives while the screen is captured is sent right after the screen.
-      const queued: Buffer[] = []
+      // Output and size changes that arrive while the screen is captured are sent right after it, in order.
+      const queued: [string, unknown][] = []
       let live = false
-      const offOutput = control.client.onOutput((bytes) => (live ? send('output', { data: bytes.toString('base64') }) : queued.push(bytes)))
+      const emit = (event: string, data: unknown) => (live ? send(event, data) : queued.push([event, data]))
+      const offOutput = control.client.onOutput((bytes) => emit('output', { data: bytes.toString('base64') }))
+      const offSize = control.client.onSize((cols, rows) => emit('size', { cols, rows }))
       let offExit: () => void = () => undefined
       const ended = new Promise<void>((resolve) => {
         stream.onAbort(resolve)
@@ -36,15 +38,16 @@ export function tmuxRoutes(tmuxWeb: TmuxWeb): Hono {
       })
       const heartbeat = setInterval(() => send('ping', {}), HEARTBEAT_MS)
       try {
-        const screen = await control.client.screen().catch(() => Buffer.alloc(0))
-        send('screen', { data: screen.toString('base64') })
-        for (const bytes of queued.splice(0)) send('output', { data: bytes.toString('base64') })
+        const screen = await control.client.screen().catch(() => ({ bytes: Buffer.alloc(0), cols: 0, rows: 0 }))
+        send('screen', { data: screen.bytes.toString('base64'), cols: screen.cols, rows: screen.rows })
+        for (const [event, data] of queued.splice(0)) send(event, data)
         live = true
         await ended
         await chain
       } finally {
         clearInterval(heartbeat)
         offOutput()
+        offSize()
         offExit()
         control.release()
       }
