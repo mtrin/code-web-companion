@@ -76,7 +76,9 @@ The page keeps the sessions it starts in a tmux server of its own, on the socket
 
 It behaves like tmux you run yourself. Leaving a chat only disconnects the page; Claude keeps running until it exits, through `/exit` from the message box, the terminal panel or an attached terminal. The sidebar marks those sessions as open, as it does for any terminal. The server keeps running when the companion restarts, and the page links to its sessions again on the next join.
 
-For sessions in this server, a Terminal button in the session header opens Claude's real screen in a panel beside the page, fed by tmux control mode (`tmux -C`). Keys typed there go to Claude, Escape included, and the page's own shortcuts do not fire, so the notes view and the terminal stay apart. Approvals, questions and pickers are answered there. The panel opens by itself, with the keyboard in it, when Claude starts waiting for an answer, and the page never moves the keyboard out of it. Resizing the panel resizes the tmux window.
+For sessions in this server, a Terminal button in the session header opens Claude's real screen in a panel beside the page, fed by tmux control mode (`tmux -C`). Keys typed there go to Claude, Escape included, and the page's own shortcuts do not fire, so the notes view and the terminal stay apart. Approvals, questions and pickers are answered there. The panel opens by itself, with the keyboard in it, when Claude starts waiting for an answer, and the page never moves the keyboard out of it.
+
+The panel and any terminal attached to the same session share one tmux window. As in tmux, the viewer used last sets its size: opening the panel or typing in it gives the window the panel's size, and typing in an attached terminal gives it that terminal's size. tmux does not count keys sent through control mode, so the panel claims the size itself with `switch-client` when you type in it. The panel always draws at the window's real size, which tmux reports to it, because the stream it gets is raw terminal output that only lines up at that size. While a smaller terminal holds the size, the panel shows empty space below.
 
 ### Archive and delete
 
