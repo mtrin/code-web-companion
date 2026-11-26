@@ -279,7 +279,7 @@ body.with-terminal {
   min-width: 0;
   background: #181818;
   border-left: 1px solid var(--border);
-  overflow: hidden;
+  overflow: auto;
 }
 
 /* Padding goes on the xterm element, which the fit addon subtracts when it sizes the terminal. */

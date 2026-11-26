@@ -230,6 +230,7 @@ A test with a throwaway session in a detached tmux session checked the paste rou
 15. **Never lose a chat to Claude Code's cleanup.** By default the server archives a session one day before Claude Code's `cleanupPeriodDays` limit would delete it, skipping open sessions. It checks when the service starts and then every hour, so a computer that was off for a while is covered before the first new session runs the cleanup. A full backup that copies each transcript as it grows is an optional extra.
 16. **Compress archived chats, and show them as usual.** Archived transcripts never change, so archiving can compress them with zstd and unarchiving puts back the plain file that `claude --resume` needs. Node's built-in `zlib` reads it, so the page opens a compressed chat like any other.
 17. **An install command.** One command that writes the systemd or launchd service with the right paths filled in.
+18. **A faster terminal panel.** Typing in the panel feels a little slower than in a terminal app, most visibly at the caret. First measure where the time goes: sending the key, tmux and Claude, and drawing. If drawing dominates, switch xterm.js to its GPU renderer, `@xterm/addon-webgl`, which draws on the GPU the way Ghostty does instead of with page elements.
 - claude project management
 - Fancy tmux commands or workflows started from web like
     a. Temporarily add another project (memories etc) to this project or session
