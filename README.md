@@ -4,7 +4,7 @@ A local web companion for Claude Code in tmux. It shows every Claude Code sessio
 
 Everything stays on your machine. The server reads the transcripts Claude Code already writes under `~/.claude/projects`, listens on `localhost` only, and never talks to any outside service.
 
-This is an early personal project. It runs on Linux and on Windows through WSL, and macOS support is new, as described under Install. It reads Claude Code's own files, which are not a public interface, so a Claude Code update can change what it sees. It was last tested with Claude Code 2.1.331.
+This is an early personal project. It runs on Linux, on Windows through WSL and on macOS. It reads Claude Code's own files, which are not a public interface, so a Claude Code update can change what it sees. It was last tested with Claude Code 2.1.331 on Linux and 2.1.332 on macOS.
 
 ## What it does
 
@@ -102,7 +102,7 @@ Install Node.js and tmux with Homebrew, then follow the same steps:
 brew install node tmux
 ```
 
-On Linux the server finds running Claude Code processes through `/proc`; macOS has no `/proc`, so there it reads the same facts from `ps`. That path is new and has only been tested on Linux so far. Until it is confirmed on a Mac, check that a session open in a terminal shows as open in the sidebar before you join, archive or delete it. If it shows as closed, joining would start a second Claude process on it and fork its transcript.
+On Linux the server finds running Claude Code processes through `/proc`; macOS has no `/proc`, so there it reads the same facts from `ps`. On macOS 15 with Claude Code 2.1.332, sessions open in a terminal show as open in the sidebar, and both chat routes and archive work. If a session open in a terminal ever shows as closed, do not join it: joining would start a second Claude process on it and fork its transcript.
 
 ### Run it as a service
 
@@ -114,7 +114,17 @@ systemctl --user enable --now code-web-companion
 loginctl enable-linger "$USER"
 ```
 
-The last line starts the service at boot without a login. Logs come from `journalctl --user -u code-web-companion`. Besides crashes, the log records each chat error and each refused or failed send, Stop, archive, unarchive and delete, one line each with the session ID.
+The last line starts the service at boot without a login. Logs come from `journalctl --user -u code-web-companion`.
+
+On macOS a launchd agent keeps it running. Copy `com.mtrin.code-web-companion.plist` into `~/Library/LaunchAgents/`, and in it set the first `ProgramArguments` entry to the output of `command -v node`, `WorkingDirectory` to your clone, and both log paths to your home folder, because launchd does not expand `~` or `$HOME`. Add an `EnvironmentVariables` dictionary for the settings you change. Then:
+
+```sh
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.mtrin.code-web-companion.plist
+```
+
+The agent starts at once and at every login, runs while you are logged in, and launchd starts it again if it stops. After pulling an update, `launchctl kickstart -k gui/$(id -u)/com.mtrin.code-web-companion` restarts it. After editing the plist, `launchctl bootout gui/$(id -u)/com.mtrin.code-web-companion` and then the `bootstrap` line above load the new version. Logs go to `~/Library/Logs/code-web-companion.log`, which the Console app also shows. `ProcessType` is `Interactive` because launchd puts light CPU and disk limits on agents without it, and headless chats run as children of the server.
+
+Besides crashes, the log records each chat error and each refused or failed send, Stop, archive, unarchive and delete, one line each with the session ID.
 
 ## Settings
 
@@ -173,6 +183,7 @@ The server is Node running TypeScript directly through type stripping, so the co
 | `public/preview.js` | Rendered view of the reply over the same Markdown text |
 | `web/codemirror.js` | CodeMirror modules both editors use, bundled by `npm run build` |
 | `code-web-companion.service` | Example systemd user unit |
+| `com.mtrin.code-web-companion.plist` | Example launchd agent for macOS |
 
 ## Roadmap
 
@@ -196,8 +207,11 @@ A test with a throwaway session in a detached tmux session checked the paste rou
 14. **Refine the context bar colour.** The bar uses a light blue, `--context` in `public/style.css`, so it stands apart from the darker blue border of the selected row. The exact shade is not settled.
 15. **Never lose a chat to Claude Code's cleanup.** By default the server archives a session one day before Claude Code's `cleanupPeriodDays` limit would delete it, skipping open sessions. It checks when the service starts and then every hour, so a computer that was off for a while is covered before the first new session runs the cleanup. A full backup that copies each transcript as it grows is an optional extra.
 16. **Compress archived chats, and show them as usual.** Archived transcripts never change, so archiving can compress them with zstd and unarchiving puts back the plain file that `claude --resume` needs. Node's built-in `zlib` reads it, so the page opens a compressed chat like any other.
-17. **A macOS service.** Running in the background on macOS needs a launchd agent instead of a systemd unit.
-18. **An install command.** One command that writes the systemd or launchd service with the right paths filled in.
+17. **An install command.** One command that writes the systemd or launchd service with the right paths filled in.
+- claude project management
+- Fancy tmux commands or workflows started from web like
+    a. Temporarily add another project (memories etc) to this project or session
+    b. memory management linking, unlinking with a toggle
 
 ## License
 
