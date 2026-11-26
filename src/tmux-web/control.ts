@@ -15,6 +15,10 @@ export class ControlClient {
   private readonly outputs = new Set<(bytes: Buffer) => void>()
   private readonly sizes = new Set<(cols: number, rows: number) => void>()
   private readonly exits = new Set<() => void>()
+  private readonly session: string
+  // The size this viewer asked for, and the pane's real size as tmux last reported it.
+  private requested = ''
+  private current = ''
   private block: string[] | undefined
   private rest = Buffer.alloc(0)
   private attached = false
@@ -24,6 +28,7 @@ export class ControlClient {
 
   constructor(bin: string, server: string[], name: string, env?: NodeJS.ProcessEnv) {
     this.target = `=${name}:`
+    this.session = `=${name}`
     this.ready = new Promise((resolve, reject) => {
       this.markReady = resolve
       this.failReady = reject
@@ -69,6 +74,9 @@ export class ControlClient {
   // Writes bytes to the pane as if typed: send-keys -H passes each byte through unchanged.
   async input(bytes: Buffer): Promise<void> {
     const sends: Promise<string[]>[] = []
+    // Typing here makes this viewer the latest one again, so the window takes its size, as typing in a terminal does.
+    // tmux does not count keys sent through control mode, but switch-client resets the latest client.
+    if (this.requested && this.requested !== this.current) sends.push(this.command(`switch-client -E -t ${this.session}`))
     for (let start = 0; start < bytes.length; start += INPUT_CHUNK) {
       const hex = [...bytes.subarray(start, start + INPUT_CHUNK)].map((byte) => byte.toString(16).padStart(2, '0'))
       sends.push(this.command(`send-keys -t ${this.target} -H ${hex.join(' ')}`))
@@ -77,6 +85,7 @@ export class ControlClient {
   }
 
   async resize(cols: number, rows: number): Promise<void> {
+    this.requested = `${cols}x${rows}`
     await this.command(`refresh-client -C ${cols}x${rows}`)
   }
 
@@ -87,6 +96,7 @@ export class ControlClient {
       this.command(`display-message -p -t ${this.target} '#{cursor_x} #{cursor_y} #{pane_width} #{pane_height}'`),
     ])
     const [x = 0, y = 0, cols = 0, rows = 0] = info.split(' ').map(Number)
+    this.current = `${cols}x${rows}`
     const bytes = Buffer.from(`\x1b[0m\x1b[H\x1b[2J${lines.join('\x1b[0m\r\n')}\x1b[0m\x1b[${y + 1};${x + 1}H`, 'utf8')
     return { bytes, cols, rows }
   }
@@ -140,7 +150,10 @@ export class ControlClient {
     if (text.startsWith('%layout-change ')) {
       // Control clients get the classic layout string, "checksum,WIDTHxHEIGHT,..."; sessions here have one pane.
       const size = /^%layout-change @\d+ [0-9a-f]{4},(\d+)x(\d+),/.exec(text)
-      if (size) for (const listener of this.sizes) listener(Number(size[1]), Number(size[2]))
+      if (size) {
+        this.current = `${size[1]}x${size[2]}`
+        for (const listener of this.sizes) listener(Number(size[1]), Number(size[2]))
+      }
       return
     }
     if (text.startsWith('%exit')) this.end(new Error('The tmux session has ended.'))
