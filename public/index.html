@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/vendor/hljs.css" />
     <link rel="stylesheet" href="/style.css" />
     <link rel="stylesheet" href="/annotate.css" />
+    <link rel="stylesheet" href="/vendor/xterm.css" />
     <script type="module" src="/app.js"></script>
   </head>
   <body>
@@ -27,6 +28,7 @@
         <span id="open-badge" hidden></span>
         <span id="context" hidden><span class="meter"><span class="fill"></span></span><span class="label"></span></span>
         <span id="status"></span>
+        <button id="terminal-toggle" type="button" hidden title="Show Claude's screen, to answer approvals and questions">Terminal</button>
       </header>
       <section id="entries"></section>
       <div id="draft" hidden></div>
@@ -34,6 +36,7 @@
         <div id="asks"></div>
         <div id="chat-notice" hidden></div>
         <div id="chat-error" hidden></div>
+        <button id="chat-attach" type="button" hidden title="Copy this command, then run it in a terminal to see the same Claude there"></button>
         <form id="compose" class="off">
           <div id="message"></div>
           <div class="compose-bar">
@@ -46,6 +49,7 @@
         </form>
       </section>
     </main>
+    <section id="terminal" hidden></section>
     <div id="toast" hidden><span id="toast-text"></span><button id="toast-action" type="button" hidden></button></div>
   </body>
 </html>

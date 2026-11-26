@@ -38,6 +38,11 @@ export function shellEnvironment(): Promise<Environment> {
   })
 }
 
+// The server's own environment without Claude Code's variables or the companion's settings.
+export function serviceEnvironment(): Environment {
+  return cleaned(process.env, true)
+}
+
 function quoted(value: string): string {
   return `'${value.replaceAll("'", `'\\''`)}'`
 }

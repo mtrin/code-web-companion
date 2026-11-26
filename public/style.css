@@ -15,6 +15,7 @@
   --ok: #6cc070;
   --column: 1440px;
   --sidebar: 300px;
+  --terminal: minmax(480px, 45vw);
   --mono: "Cascadia Code", "Cascadia Mono", Consolas, "DejaVu Sans Mono", monospace;
 }
 
@@ -269,11 +270,55 @@ button.row-action.deleting {
   overflow-y: auto;
 }
 
+body.with-terminal {
+  grid-template-columns: var(--sidebar) minmax(0, 1fr) var(--terminal);
+}
+
+#terminal {
+  height: 100vh;
+  min-width: 0;
+  background: #181818;
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+}
+
+/* Padding goes on the xterm element, which the fit addon subtracts when it sizes the terminal. */
+#terminal .xterm {
+  padding: 8px 6px 8px 10px;
+}
+
+#terminal[hidden] {
+  display: none;
+}
+
+#terminal-toggle {
+  align-self: center;
+  padding: 2px 10px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#terminal-toggle:hover,
+#terminal-toggle.active {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+#terminal-toggle[hidden] {
+  display: none;
+}
+
 #session-header {
   position: sticky;
   top: 0;
   z-index: 2;
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 14px;
   padding: 10px 32px;
@@ -820,6 +865,29 @@ button.copy.done::after {
   font-size: 12.5px;
 }
 
+#chat-attach {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 6px 12px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  font: 12px/1.5 var(--mono);
+  text-align: left;
+  cursor: copy;
+}
+
+#chat-attach:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+#chat-attach[hidden] {
+  display: none;
+}
+
 #chat-error {
   margin-bottom: 8px;
   padding: 8px 12px;
@@ -958,6 +1026,14 @@ fieldset.question input.other {
   }
 
   #sidebar {
+    display: none;
+  }
+
+  body.with-terminal {
+    grid-template-columns: 1fr;
+  }
+
+  body.with-terminal #main {
     display: none;
   }
 }

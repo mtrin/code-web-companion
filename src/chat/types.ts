@@ -28,6 +28,10 @@ export interface ChatStatus {
   error: string
   notice: string
   where?: string
+  // tmux-web session name when Claude runs there; the page opens its terminal panel with it.
+  terminal?: string
+  // Command that attaches a terminal to that tmux-web session.
+  attach?: string
 }
 
 export interface Decision {
