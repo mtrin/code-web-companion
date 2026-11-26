@@ -8,6 +8,8 @@ WorkingDirectory=%h/code-web-companion
 ExecStart=/usr/bin/node src/server.ts
 Restart=always
 RestartSec=2
+# Stop only the server: Claude sessions in the companion's tmux server keep running across restarts.
+KillMode=process
 
 [Install]
 WantedBy=default.target

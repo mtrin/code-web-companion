@@ -5,6 +5,7 @@ import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono, type Context } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import { archiveSession, restoreSession } from './archive.ts'
+import { serviceEnvironment } from './chat/launch.ts'
 import { ChatRegistry } from './chat/registry.ts'
 import type { Decision } from './chat/types.ts'
 import type { Config } from './config.ts'
@@ -12,6 +13,8 @@ import { deleteSession } from './delete.ts'
 import { logError } from './log.ts'
 import { createRenderer } from './render/markdown.ts'
 import { createToken, localOnly } from './security.ts'
+import { tmuxRoutes } from './tmux-web/routes.ts'
+import { TmuxWeb } from './tmux-web/server.ts'
 import { FollowerPool, type FollowerEvent } from './transcript/follower.ts'
 import { openSessions, VIEWER_ENTRYPOINT, type OpenSession } from './transcript/open.ts'
 import { isSessionId, SessionIndex } from './transcript/sessions.ts'
@@ -28,7 +31,8 @@ export interface Viewer {
 export async function createApp(config: Config): Promise<Viewer> {
   const index = new SessionIndex(config.projectsDir, config.archiveDir, config.sessionLimit)
   const pool = new FollowerPool(createRenderer({ wslDistro: config.wslDistro }), config.pollMs)
-  const chats = new ChatRegistry(config)
+  const tmuxWeb = new TmuxWeb(config.tmuxBin, config.tmuxSocket, serviceEnvironment())
+  const chats = new ChatRegistry(config, tmuxWeb)
   const token = createToken()
   const hljsCss = await readFile(createRequire(import.meta.url).resolve('highlight.js/styles/github-dark.css'), 'utf8')
   const publicDir = path.relative(process.cwd(), path.join(config.appRoot, 'public')) || '.'
@@ -167,6 +171,8 @@ export async function createApp(config: Config): Promise<Viewer> {
     const ok = chats.respond(c.req.param('id'), c.req.param('askId'), decision)
     return ok ? c.json({ ok }) : c.json({ error: 'That request is no longer waiting.' }, 404)
   })
+
+  app.route('/api/tmux', tmuxRoutes(tmuxWeb))
 
   app.get('/vendor/hljs.css', (c) => c.body(hljsCss, 200, { 'content-type': 'text/css; charset=utf-8' }))
 
