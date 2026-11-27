@@ -1,6 +1,6 @@
 {
   "name": "code-web-companion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "A local web companion for Claude Code in tmux: rendered replies, notes on any sentence, messages sent to your terminal.",
   "keywords": [

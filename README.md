@@ -175,6 +175,8 @@ The terminal panel can send any key to Claude, including its `!` shell commands,
 
 `npm run dev` restarts on file changes, and `npm run check` runs the TypeScript check. Use another port, such as `PORT=7880`, next to a running service. `npm ci` also bundles CodeMirror and xterm.js into `public/vendor` through the `prepare` script; after changing a file in `web/`, run `npm run build`. Code block languages load from `public/vendor/chunks` only when a reply uses them.
 
+The sidebar footer shows the version that is running: the `version` from `package.json`, the git commit and its date, and "local changes" when the clone has uncommitted edits to tracked files. The server reads them once at startup, so after pulling an update the footer changes only when the service restarts. Hovering it gives the full details, and `/api/version` returns them as JSON.
+
 The server is Node running TypeScript directly through type stripping, so the code avoids syntax that needs compiling, such as enums and constructor parameter properties. The live channel is Server-Sent Events at `/api/sessions/:id/events`, carrying transcript entries and chat status. Changes go through POST routes under `/api/sessions/:id/`. The terminal panel has its own Server-Sent Events stream at `/api/tmux/:name/stream`, carrying the screen and then the pane's output as base64 bytes, and POST routes at `/api/tmux/:name/input` and `/api/tmux/:name/size`; they accept only sessions on the companion's tmux server. The Agent SDK is pinned to a release that matches a recent Claude Code.
 
 | Path                                 | Role                                                                                                                       |
@@ -200,6 +202,7 @@ The server is Node running TypeScript directly through type stripping, so the co
 | `src/archive.ts`                     | Archive and unarchive                                                                                                      |
 | `src/delete.ts`                      | Permanent delete with the citation and location checks                                                                     |
 | `src/security.ts`                    | Host, origin and token checks                                                                                              |
+| `src/version.ts`                     | The running version: package version, git commit and date, uncommitted changes                                            |
 | `src/app.ts`                         | HTTP routes                                                                                                                |
 | `public/`                            | Browser page, plain JavaScript and CSS with no build step                                                                  |
 | `public/prompt.js`                   | Markdown editors: the message box and the note box                                                                         |

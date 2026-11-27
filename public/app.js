@@ -907,6 +907,16 @@ document.addEventListener('keydown', (event) => {
 })
 paintExpand()
 
+async function showVersion() {
+  const info = await fetch('/api/version')
+    .then((response) => response.json())
+    .catch(() => null)
+  if (!info?.version) return
+  const footer = $('version')
+  footer.textContent = [`v${info.version}`, info.commit, info.changed ? 'local changes' : ''].filter(Boolean).join(' · ')
+  footer.title = `code-web-companion ${info.version}${info.commit ? `, commit ${info.commit} from ${info.date}` : ''}${info.changed ? ', with uncommitted changes' : ''}`
+}
+
 new ResizeObserver(() => {
   document.documentElement.style.setProperty('--sticky-top', `${$('session-header').offsetHeight}px`)
 }).observe($('session-header'))
@@ -917,6 +927,7 @@ els.filter.addEventListener('input', renderSessions)
 window.addEventListener('hashchange', () => open(selectedId()))
 
 token = (await (await fetch('/api/token')).json()).token
+void showVersion()
 await loadSessions()
 open(selectedId())
 setInterval(loadSessions, REFRESH_MS)

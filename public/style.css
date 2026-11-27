@@ -69,6 +69,20 @@ body {
   overflow-y: auto;
 }
 
+#version {
+  padding: 6px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#version:empty {
+  display: none;
+}
+
 .tabs {
   display: flex;
   gap: 4px;
