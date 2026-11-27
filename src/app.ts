@@ -19,6 +19,7 @@ import { FollowerPool, type FollowerEvent } from './transcript/follower.ts'
 import { openSessions, VIEWER_ENTRYPOINT, type OpenSession } from './transcript/open.ts'
 import { isSessionId, SessionIndex } from './transcript/sessions.ts'
 import type { SessionMeta } from './transcript/types.ts'
+import { readVersion } from './version.ts'
 
 const HEARTBEAT_MS = 20_000
 const MAX_MESSAGE_CHARS = 200_000
@@ -36,6 +37,7 @@ export async function createApp(config: Config): Promise<Viewer> {
   const token = createToken()
   const hljsCss = await readFile(createRequire(import.meta.url).resolve('highlight.js/styles/github-dark.css'), 'utf8')
   const publicDir = path.relative(process.cwd(), path.join(config.appRoot, 'public')) || '.'
+  const version = await readVersion(config.appRoot)
 
   const describe = (meta: SessionMeta, open: Map<string, OpenSession[]>) => {
     const processes = open.get(meta.id) ?? []
@@ -64,6 +66,7 @@ export async function createApp(config: Config): Promise<Viewer> {
 
   app.get('/healthz', (c) => c.text('ok'))
   app.get('/api/token', (c) => c.json({ token }))
+  app.get('/api/version', (c) => c.json(version))
 
   app.get('/api/sessions', async (c) => {
     const [sessions, open] = await Promise.all([index.list(), openSessions(config.registryDir)])
